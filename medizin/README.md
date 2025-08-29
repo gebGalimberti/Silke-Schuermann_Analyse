@@ -35,3 +35,21 @@ Alle Dokumente werden **doppelt erfasst**:
 
 ### Sonstiges
 - (Platzhalter – Befunde werden eingepflegt)
+
+# Medizinische Befunde & Unterlagen
+
+Dieser Ordner enthält alle medizinischen Dokumente (Arztberichte, Überweisungen, Befunde, Atteste, Laborwerte, Gutachten etc.).  
+Jedes Dokument wird **in zwei Formen erfasst**:
+1. Originaldatei (PDF, JPG, PNG)  
+2. Zusammenfassung in Markdown (`.md`) mit Datum, Arzt, Inhalt und Relevanz  
+
+Ziel: **lückenlose Dokumentation der gesundheitlichen Entwicklung** sowie **gerichtliche und außergerichtliche Einreichungen**.
+
+---
+
+## Struktur
+
+Alle Befunde liegen direkt im Ordner `medizin/`.  
+Jedes Original erhält eine gleichnamige `.md`-Zusammenfassung.  
+
+Beispiel:
