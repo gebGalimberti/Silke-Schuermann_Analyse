@@ -39,3 +39,6 @@ Stand: erfasst bis Seite ~480 der Handakte (gerichtlich).
 - **26.08.2024** – Verfügung: Termin bleibt bestehen → [20240826_Verfuegung_Terminbestaetigung.md](gericht/landgericht/20240826_Verfuegung_Terminbestaetigung.md)
 - **30.08.2024** – Schriftsatz Antragstellerin: Unterlagenvollständigkeit → [20240830_Schriftsatz_Unterlagenvollstaendigkeit.md](gericht/landgericht/20240830_Schriftsatz_Unterlagenvollstaendigkeit.md)
 - **03.09.2024** – Verfügung: Unter
+---
+## Medizinische Befunde
+- [Befunde & Anlagen](medizin/) *(noch zu extrahieren, ab Seite ~600 ff.)*
