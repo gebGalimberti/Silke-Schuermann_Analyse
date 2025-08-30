@@ -1,0 +1,143 @@
+name: Build medizin/README
+
+on:
+  push:
+    paths:
+      - "medizin/**"
+      - ".github/workflows/medizin-readme.yml"
+  workflow_dispatch:
+
+jobs:
+  build-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Generate README from files in medizin/
+        run: |
+          python - << 'PY'
+          import os, re, pathlib, sys
+          ROOT = pathlib.Path(".")
+          MED = ROOT/"medizin"
+          if not MED.exists():
+              print("No medizin/ folder found"); sys.exit(0)
+
+          # Kategorien + Erkennungsregeln
+          cats = {
+            "Zahnmedizinisch (Schienen, Kronen/Prothetik, „verschluckte Zahnkrone“)": [
+              r"zahn", r"krone", r"prothe", r"schiene", r"okkl", r"biss"
+            ],
+            "Psychisch / Psychosomatisch": [
+              r"psy", r"depress", r"angst", r"schlaf", r"therap", r"klin(i)?k.*psy"
+            ],
+            "Orthopädisch (CMD, Haltung, Wirbelsäule)": [
+              r"ortho", r"wirbel", r"hws", r"lws", r"cmd", r"haltung", r"mrt|ct|roentgen|röntgen"
+            ],
+            "Internistisch (Folgen verschluckte Zahnkrone, Gastro, Labor)": [
+              r"intern", r"gastro", r"labor", r"blut", r"speiseröhre", r"mag(en)?"
+            ],
+            "Sozialberichte": [
+              r"sozial", r"amt", r"hilfe", r"leistungs", r"sgb"
+            ],
+          }
+
+          # Hilfsfunktionen
+          def guess_cat(name):
+              n = name.lower()
+              for cat, patterns in cats.items():
+                  for p in patterns:
+                      if re.search(p, n):
+                          return cat
+              return "— Unsortiert —"
+
+          def nice_title(fn):
+              base = re.sub(r"[_\-]+", " ", fn)
+              base = re.sub(r"\s+", " ", base).strip()
+              return base
+
+          # Alle Dateien im Ordner medizin/ erfassen (nur „echte“ Uploads)
+          files = sorted([p for p in MED.iterdir() if p.is_file()])
+          entries = {}
+          for f in files:
+              if f.name.lower() == "readme.md":
+                  continue
+              # Paarbildung: Original <-> Markdown
+              if f.suffix.lower() in [".md"]:
+                  continue
+              cat = guess_cat(f.name)
+              entries.setdefault(cat, {})
+              stem = f.stem
+              md = MED/(stem + ".md")
+              entries[cat][f.name] = {
+                  "original": f.name,
+                  "markdown": md.name if md.exists() else None,
+              }
+
+          # README-Inhalt bauen
+          header = """# Medizinische Befunde & Unterlagen
+
+Dieses Verzeichnis bildet **ausschließlich die tatsächlich hochgeladenen Dokumente** ab.
+Keine Unterordner – alle Originale und (falls vorhanden) ihre `.md`-Zusammenfassungen liegen direkt hier.
+
+Jeder Eintrag listet:
+- (falls erkennbar im Dateinamen) Datum / Absender / Titel
+- Typ & Auszüge bitte in der **zugehörigen .md** hinterlegen
+- Verlinkung auf Originaldatei und Markdown
+
+---
+
+## Themenübersicht & Dokumente
+"""
+          parts = [header]
+
+          # Kategorien in stabiler Reihenfolge
+          order = [
+            "Zahnmedizinisch (Schienen, Kronen/Prothetik, „verschluckte Zahnkrone“)",
+            "Psychisch / Psychosomatisch",
+            "Orthopädisch (CMD, Haltung, Wirbelsäule)",
+            "Internistisch (Folgen verschluckte Zahnkrone, Gastro, Labor)",
+            "Sozialberichte",
+            "— Unsortiert —",
+          ]
+          # Sicherstellen, dass leere Kategorien auch erscheinen, wenn es später Uploads gibt
+          for cat in order:
+              parts.append(f"\n### {cat}\n")
+              if cat not in entries or not entries[cat]:
+                  parts.append("_(noch keine Dokumente in dieser Kategorie)_\n")
+                  continue
+              # Einträge sortieren
+              for fname in sorted(entries[cat].keys()):
+                  data = entries[cat][fname]
+                  title = nice_title(pathlib.Path(fname).stem)
+                  o = data["original"]
+                  m = data["markdown"]
+                  if m:
+                      parts.append(f"- **{title}** — 📎 [Original]({o}) · 📄 [Markdown]({m})\n")
+                  else:
+                      parts.append(f"- **{title}** — 📎 [Original]({o})\n")
+
+          content = "".join(parts)
+
+          # README schreiben (überschreiben)
+          (MED/"README.md").write_text(content, encoding="utf-8")
+          print("README generated.")
+          PY
+
+      - name: Commit changes
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add medizin/README.md
+            git commit -m "chore(medizin): auto-update README from current uploads"
+            git push
+          else
+            echo "No changes to commit."
+          fi
